@@ -1,23 +1,20 @@
-import json
 
 from pre_system_svea.resource import Resources
+from pre_system_svea import utils
 
 
 class Operators:
     def __init__(self):
-        self.resources = Resources()
-        self.file_path = self.resources.operators
+        self.file_path = Resources().operator_file
 
         self.data = {}
         self._load_file()
 
     def _load_file(self):
-        with open(self.file_path, 'r') as fid:
-            self.data = json.load(fid)
+        self.data = utils.load_json(self.file_path)
 
     def _save_file(self):
-        with open(self.file_path, 'w') as fid:
-            json.dump(self.data, fid, indent=4)
+        utils.save_json(self.data, self.file_path)
 
     def get_operator_list(self):
         return sorted(self.data)

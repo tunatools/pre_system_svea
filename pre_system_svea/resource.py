@@ -8,4 +8,5 @@ class Resources:
         self._load_resources_paths()
 
     def _load_resources_paths(self):
-        self.operators = Path(self.root_directory, 'operators.json')
+        self.operator_file = Path(self.root_directory, 'operators.json')
+        self.station_file = Path(self.root_directory, 'station.txt')
