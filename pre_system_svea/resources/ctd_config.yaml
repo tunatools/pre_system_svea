@@ -1,0 +1,21 @@
+# All paths with /
+
+seasave:
+  program:
+    path: 'C:/Program Files (x86)/Sea-Bird/SeasaveV7/Seasave.exe'
+  psa_main_file:
+    path: 'root/SBE/seasave_psa/Svea/Seasave.psa'
+  xmlcon_files:
+    SBE09:
+      # Expecting only one xmlcon file in this directory. Can also specify file path here.
+      path: 'root/SBE/XMLCON/SBE09'
+    SBE19:
+      # Expecting only one xmlcon file in this directory. Can also specify file path here.
+      path: 'root/SBE/XMLCON/SBE19'
+  Data Scifi01:
+    path: 'scifi01/scifi/Data/mcseabirdchem/data'
+  Data raw:
+    path: 'scifi01/scifi/Processed/mcseabirdchem/data'
+  Data local:
+    path: ''
+

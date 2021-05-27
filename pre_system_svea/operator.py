@@ -4,24 +4,21 @@ from pre_system_svea import utils
 
 
 class Operators:
-    def __init__(self):
-        self.file_path = Resources().operator_file
+    def __init__(self, root_directory=None):
+        self._resources = Resources(root_directory=root_directory)
+        self.file_path = self._resources.operator_file
 
-        self.data = {}
+        self._data = {}
         self._load_file()
 
     def _load_file(self):
-        self.data = utils.load_json(self.file_path)
+        self._data = utils.load_json(self.file_path)
 
     def _save_file(self):
-        utils.save_json(self.data, self.file_path)
+        utils.save_json(self._data, self.file_path)
 
     def get_operator_list(self):
-        return sorted(self.data)
+        return sorted(self._data)
 
     def get_full_name(self, short_name, default=None):
-        return self.data.get(short_name, default)
-
-
-if __name__ == '__main__':
-    op = Operators()
+        return self._data.get(short_name, default)

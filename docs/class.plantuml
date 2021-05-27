@@ -1,0 +1,97 @@
+@startuml
+'skinparam Style strictuml
+
+class resources_Resources {    
+    +operator_file 
+    +station_file
+    +station_filter_file
+    +seasave_psa_main_file
+    +seasave_xmlcon_main_files
+    --
+    +root_directory
+    +resource_settings_file_path
+    -_config
+    ==
+    -_load_resources()
+    -_save_paths()
+    -_get_path()
+    -_get_paths_in_directory()
+}
+note left of resources_Resources::resource_settings_file_path 
+    Konfiguration i YAML-fil
+end note
+
+class operator_Operators {    
+    +file_path 
+    -_resources
+    -_data
+    ==
+    +get_operator_list()
+    +get_full_name()
+    --
+    -_load_file()
+
+}
+
+class station_StationMethods {    
+    +get_closest_station()
+    +get_proper_station_name()
+    +get_station_info()
+    +get_station_list()
+    +get_position()
+}
+
+class station_StationsMatprogram {
+    +station_name_list
+    --
+    -_resources
+    -_station_file
+    ==
+    +get_closest_station()
+    +get_proper_station_name()
+    +get_station_info()
+    +get_station_list()
+    +get_position()
+    --
+    -_load_station_filter_file()
+}
+
+class station_StationFile {
+    +file_path
+    +lat_col
+    +lon_col
+    +depth_col
+    +station_col
+    --
+    -_resources
+    -_station_synonyms
+    ==
+    +get_closest_station()
+    +get_proper_station_name()
+    +get_station_info()
+    +get_station_list()
+    +get_position()
+    --
+    -_load_file()
+    -_create_station_synonyms()
+    -_add_cols_to_station_info()
+}
+
+class station_Stations {
+    
+}
+
+
+operator_Operators o-- resources_Resources
+
+station_StationsMatprogram <|-- station_StationMethods
+station_StationsMatprogram o-- resources_Resources
+station_StationsMatprogram o-- station_StationFile
+
+station_StationFile o-- resources_Resources
+
+station_Stations <|-- station_StationsMatprogram 
+
+
+
+@enduml

@@ -1,0 +1,17 @@
+# All paths with /
+
+operators:
+  path: 'root/operators.json'
+  description: 'JSON file with key, value pair {short name: full name}'
+
+stations:
+  stationslista:
+    path: 'root/station.txt'
+    description: 'Master station list that i used by DV'
+  filter:
+    path: 'root/stationslista_matprogram.txt'
+    description: 'One column text file listing stations to filter on'
+
+ships:
+  path: 'root/ships.txt'
+

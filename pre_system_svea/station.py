@@ -24,12 +24,47 @@ class StationMethods:
         raise NotImplementedError
 
 
+class StationsMatprogram(StationMethods):
+
+    def __init__(self, root_directory=None):
+        self.station_name_list = []
+        self._resources = Resources(root_directory=root_directory)
+        self._station_file = StationFile(self._resources.station_file)
+        self._load_station_filter_file()
+
+    def _load_station_filter_file(self):
+        self.station_name_list = []
+        with open(self._resources.station_filter_file) as fid:
+            for line in fid:
+                name = line.strip()
+                if not name:
+                    continue
+                if not self._station_file.get_station_info(name):
+                    print(f'Could not find station infor for station: {name}')
+                    continue
+                self.station_name_list.append(name)
+        self.station_name_list.sort()
+
+    def get_closest_station(self, *args, **kwargs):
+        return self._station_file.get_closest_station(*args, *kwargs)
+
+    def get_proper_station_name(self, *args, **kwargs):
+        return self._station_file.get_proper_station_name(*args, *kwargs)
+
+    def get_station_info(self, *args, **kwargs):
+        return self._station_file.get_station_info(*args, *kwargs)
+
+    def get_station_list(self, *args, **kwargs):
+        return self.station_name_list
+
+    def get_position(self, *args, **kwargs):
+        return self.get_position(*args, *kwargs)
+
+
 class StationFile(StationMethods):
     def __init__(self, file_path=None):
-        if file_path:
-            self.file_path = Path(file_path)
-        else:
-            self.file_path = Resources().station_file
+
+        self.file_path = Path(file_path)
 
         self._station_synonyms = {}
 
@@ -38,16 +73,17 @@ class StationFile(StationMethods):
         self.depth_col = 'WADEP'
         self.station_col = 'STATION_NAME'
 
+        self._df = None
         self._load_file()
 
     def _load_file(self):
-        self.df = pd.read_csv(self.file_path, sep='\t', encoding='cp1252')
-        self.df['MEDIA'] = self.df['MEDIA'].fillna('')
-        self.df[self.depth_col] = self.df[self.depth_col].fillna('')
-        self.df = self.df[self.df['MEDIA'].str.contains('Vatten')]
+        self._df = pd.read_csv(self.file_path, sep='\t', encoding='cp1252')
+        self._df['MEDIA'] = self._df['MEDIA'].fillna('')
+        self._df[self.depth_col] = self._df[self.depth_col].fillna('')
+        self._df = self._df[self._df['MEDIA'].str.contains('Vatten')].reset_index()
 
     def _create_station_synonyms(self):
-        for name, synonym_string in zip(self.df[self.station_col], self.df['SYNONYM_NAMES'].astype(str)):
+        for name, synonym_string in zip(self._df[self.station_col], self._df['SYNONYM_NAMES'].astype(str)):
             self._station_synonyms[name.upper()] = name
             synonym_string = synonym_string.strip()
             if not synonym_string:
@@ -63,14 +99,18 @@ class StationFile(StationMethods):
         station_info['station'] = station_info[self.station_col]
 
     def get_closest_station(self, lat, lon):
-        if not lat and lon:
+        if lat is None or lon is None:
             return None
-        dist = self.df.apply(lambda x: distance_to_station((lat, lon),
+        dist = self._df.apply(lambda x: distance_to_station((lat, lon),
                                                            (x[self.lat_col],
                                                             x[self.lon_col])), axis=1)
         min_dist = min(dist)
         index = np.where(dist == min_dist)
-        station_info = self.df.loc[index]
+        # print('LAT', lat)
+        # print('LON', lon)
+        # print('INDEX', index)
+        df = self._df.loc[index[0]]
+        station_info = dict(zip(df.columns, df.values[0]))
         station_info['distance'] = min_dist
         station_info['acceptable'] = min_dist <= station_info['OUT_OF_BOUNDS_RADIUS']
         self._add_cols_to_station_info(station_info)
@@ -91,12 +131,12 @@ class StationFile(StationMethods):
         name = self.get_proper_station_name(station_name)
         if not name:
             return None
-        station_info = self.df.loc[self.df['STATION_NAME'] == name].iloc[0].to_dict()
+        station_info = self._df.loc[self._df['STATION_NAME'] == name].iloc[0].to_dict()
         self._add_cols_to_station_info(station_info)
         return station_info
 
     def get_station_list(self):
-        return sorted(self.df['STATION_NAME'])
+        return sorted(self._df['STATION_NAME'])
 
     def get_position(self, station_name):
         station_info = self.get_station_info(station_name)
@@ -105,13 +145,16 @@ class StationFile(StationMethods):
         return station_info.get('lat'), station_info.get('lon')
     
 
-class Stations(StationFile):
+class Stations(StationsMatprogram):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
 
 def distance_to_station(pos1, pos2):
-    """ http://www.johndcook.com/blog/python_longitude_latitude/ """
+    """
+    http://www.johndcook.com/blog/python_longitude_latitude/
+    Returns distance in meters
+    """
     lat1, lon1 = pos1
     lat2, lon2 = pos2
     if lat1 == lat2 and lon1 == lon2:
@@ -135,4 +178,5 @@ def distance_to_station(pos1, pos2):
 
 if __name__ == '__main__':
     s = Stations()
+    info = s.get_closest_station(57.0667, 19.83)
 

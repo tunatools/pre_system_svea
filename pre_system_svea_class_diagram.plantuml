@@ -1,0 +1,84 @@
+@startuml
+
+title pre_system_svea_class_diagram
+
+class controller.Controller #3E56EE {
+	+get_station_list()
+	+get_operator_list()
+	+get_closest_station()
+	+get_station_info()
+	+run_seasave()
+	-_subprocess_seasave()
+	+update_main_psa_file()
+}
+
+class ctd_config.CtdConfig #91F6E8 {
+	-_load_config_file()
+	-_get_path()
+	-_get_paths_in_directory()
+	-_save_paths()
+}
+
+class operator.Operators #6C229D {
+	-_load_file()
+	-_save_file()
+	+get_operator_list()
+	+get_full_name()
+}
+
+class resource.Resources #9BBC1B {
+	-_load_resources()
+	-_get_path()
+	-_get_paths_in_directory()
+	-_save_paths()
+}
+
+class station.StationMethods #98770E {
+	+get_closest_station()
+	+get_proper_station_name()
+	+get_station_info()
+	+get_station_list()
+	+get_position()
+}
+
+class station.StationsMatprogram #98770E {
+	-_load_station_filter_file()
+	+get_closest_station()
+	+get_proper_station_name()
+	+get_station_info()
+	+get_station_list()
+	+get_position()
+}
+
+class station.StationFile #98770E {
+	-_load_file()
+	-_create_station_synonyms()
+	-_add_cols_to_station_info()
+	+get_closest_station()
+	+get_proper_station_name()
+	+get_station_info()
+	+get_station_list()
+	+get_position()
+}
+
+class station.Stations #98770E {
+	
+}
+
+
+station.StationsMatprogram <|-- station.StationMethods
+
+station.StationFile <|-- station.StationMethods
+
+station.Stations <|-- station.StationsMatprogram
+
+station.StationsMatprogram o-- station.StationFile
+station.StationsMatprogram o-- resource.Resources
+
+controller.Controller o-- ctd_config.CtdConfig
+controller.Controller o-- operator.Operators
+controller.Controller o-- station.Stations
+
+operator.Operators o-- resource.Resources
+
+@enduml
