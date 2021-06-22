@@ -3,7 +3,7 @@ from pre_system_svea.station import Stations
 from pre_system_svea.ship import Ships
 
 from pre_system_svea.ctd_config import CtdConfig
-from pre_system_svea.ctd_data import CtdData
+from pre_system_svea.ctd_files import CtdFiles
 from  pre_system_svea import utils
 
 import threading
@@ -21,13 +21,14 @@ class Controller:
 
     def __init__(self, ctd_config_root_directory=None, ctd_data_root_directory=None):
         self.ctd_config = None
-        self.ctd_data = None
+        self.ctd_files = None
 
         self.__ctd_config_root_directory = None
         self.__ctd_data_root_directory = None
+        self.__ctd_data_root_directory_server = None
 
         self.ctd_config_root_directory = ctd_config_root_directory
-        self.ctd_data_root_directory = ctd_data_root_directory
+        self.ctd_files_root_directory = ctd_data_root_directory
 
         self.operators = Operators()
         self.stations = Stations()
@@ -52,8 +53,8 @@ class Controller:
         return self.__ctd_data_root_directory
 
     @ctd_data_root_directory.setter
-    def ctd_data_root_directory(self, directory):
-        if not directory:
+    def ctd_data_root_directory(self, directory=None):
+        if directory is None:
             return
         directory = Path(directory)
         if directory.name != 'data':
@@ -61,7 +62,22 @@ class Controller:
         if not directory.exists():
             os.makedirs(directory)
         self.__ctd_data_root_directory = directory
-        self.ctd_data = CtdData(directory)
+        self.ctd_files = CtdFiles(directory)
+
+    @property
+    def ctd_data_root_directory_server(self):
+        return self.__ctd_data_root_directory_server
+
+    @ctd_data_root_directory_server.setter
+    def ctd_data_root_directory_server(self, directory=None):
+        if directory is None:
+            return
+        directory = Path(directory)
+        if directory.name != 'data':
+            directory = Path(directory, 'data')
+        if not directory.exists():
+            os.makedirs(directory)
+        self.__ctd_data_root_directory_server = directory
 
     def get_station_list(self):
         return self.stations.get_station_list()
@@ -111,6 +127,11 @@ class Controller:
     def _get_main_psa_object(self):
         return psa.SeasavePSAfile(self.ctd_config.seasave_psa_main_file)
 
+    def update_xmlcon_in_main_psa_file(self, instrument):
+        xmlcon_file_path = self.get_xmlcon_path(instrument)
+        psa = self._get_main_psa_object()
+        psa.xmlcon_path = xmlcon_file_path
+
     def update_main_psa_file(self,
                              instrument=None,
                              depth=None,
@@ -126,9 +147,8 @@ class Controller:
         if not year:
             year = str(datetime.datetime.now().year)
 
-        xmlcon_file_path = self.get_xmlcon_path(instrument)
-        psa = self._get_main_psa_object()
-        psa.xmlcon_path = xmlcon_file_path
+        if instrument:
+            self.update_xmlcon_in_main_psa_file(instrument)
 
         hex_file_path = self._get_hex_file_path(instrument=instrument,
                                                 cruise_nr=cruise_nr,
@@ -186,7 +206,7 @@ class Controller:
             serno
         ])
         
-        directory = Path(self.ctd_data_root_directory, year, 'raw')
+        directory = Path(self.ctd_files_root_directory, year, 'raw')
         file_path = Path(directory, f'{file_stem}.hex')
         return file_path
 
@@ -199,7 +219,7 @@ class Controller:
         return xmlcon.serial_number
 
     def series_is_present(self, reload=False, **kwargs):
-        return self.ctd_data.series_is_present(reload=reload, **kwargs)
+        return self.ctd_files.series_is_present(reload=reload, **kwargs)
 
 
 if __name__ == '__main__':
