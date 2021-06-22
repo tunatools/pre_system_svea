@@ -20,27 +20,27 @@ class CtdFileType(ABC):
         return self._example
 
     @abstractmethod
-    def year(self, file_stem):
+    def year(self, file_path):
         pass
 
     @abstractmethod
-    def instrument(self, file_stem):
+    def instrument(self, file_path):
         pass
 
     @abstractmethod
-    def ctry(self, file_stem):
+    def ctry(self, file_path):
         pass
 
     @abstractmethod
-    def ship(self, file_stem):
+    def ship(self, file_path):
         pass
 
     @abstractmethod
-    def serno(self, file_stem):
+    def serno(self, file_path):
         pass
 
     @abstractmethod
-    def cruise(self, file_stem):
+    def cruise(self, file_path):
         pass
 
 
@@ -48,20 +48,20 @@ class CtdFileTypeFormer(CtdFileType):
     _pattern = '[^_]+_\d{4}_\d{8}_\d{4}_\d{2}_\d{2}_\d{4}'
     _example = 'SBE09_0745_20150218_1040_34_01_0122'
 
-    def year(self, file_stem):
-        return file_stem.split('_')[2][:4]
+    def year(self, file_path):
+        return file_path.stem.split('_')[2][:4]
 
-    def instrument(self, file_stem):
-        return file_stem.split('_')[0]
+    def instrument(self, file_path):
+        return file_path.stem.split('_')[0]
 
-    def ctry(self, file_stem):
-        return file_stem.split('_')[4]
+    def ctry(self, file_path):
+        return file_path.stem.split('_')[4]
 
-    def ship(self, file_stem):
-        return file_stem.split('_')[5]
+    def ship(self, file_path):
+        return file_path.stem.split('_')[5]
 
-    def serno(self, file_stem):
-        return file_stem.split('_')[6]
+    def serno(self, file_path):
+        return file_path.stem.split('_')[6]
 
     def cruise(self, *args):
         return None
@@ -79,7 +79,7 @@ class CtdFile:
 
     def get(self, item):
         if hasattr(self.file_type, item):
-            return getattr(self.file_type, item)(self.stem)
+            return getattr(self.file_type, item)(self.path)
         return None
 
     def is_matching(self, **kwargs):
@@ -91,7 +91,7 @@ class CtdFile:
 
 class CtdFiles:
 
-    def __init__(self, root_directory):
+    def __init__(self, root_directory, use_stem=False):
         self.root_directory = Path(root_directory)
         if not self.root_directory.exists():
             raise NotADirectoryError
@@ -100,7 +100,7 @@ class CtdFiles:
 
         self.files = {}
 
-        self.use_stem = False
+        self.use_stem = use_stem
 
     def check_directory(self):
         self.files = {}
@@ -131,19 +131,28 @@ class CtdFiles:
                 matching_series[name] = obj
         return matching_series
 
-    def get_next_serno(self, **kwargs):
+    def get_latest_serno(self, **kwargs):
         """
-        Returns the highest serno found in files plus one. Check for matching criteria first
+        Returns the highest serno found in files. Check for matching criteria in kwargs first.
         :param serno:
         :return:
         """
         matching_files = self.get_files_matching(**kwargs)
         serno_list = sorted(set([obj.get('serno') for name, obj in matching_files.items()]))
+        if not serno_list:
+            return None
         return serno_list[-1]
 
+    def get_next_serno(self, **kwargs):
+        latest_serno = self.get_latest_serno(**kwargs)
+        if not latest_serno:
+            return None
+        next_serno = str(int(latest_serno)+1).zfill(4)
+        return next_serno
 
-def get_ctd_files_object(directory):
-    obj = CtdFiles(directory)
+
+def get_ctd_files_object(directory, use_stem=False):
+    obj = CtdFiles(directory, use_stem=use_stem)
     obj.add_file_type(CtdFileTypeFormer())
     obj.check_directory()
     return obj
