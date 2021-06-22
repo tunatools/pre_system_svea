@@ -3,7 +3,7 @@ from pre_system_svea.station import Stations
 from pre_system_svea.ship import Ships
 
 from pre_system_svea.ctd_config import CtdConfig
-from pre_system_svea.ctd_files import CtdFiles
+from pre_system_svea.ctd_files import get_ctd_files_object
 from  pre_system_svea import utils
 
 import threading
@@ -62,7 +62,6 @@ class Controller:
         if not directory.exists():
             os.makedirs(directory)
         self.__ctd_data_root_directory = directory
-        self.ctd_files = CtdFiles(directory)
 
     @property
     def ctd_data_root_directory_server(self):
@@ -218,8 +217,15 @@ class Controller:
         xmlcon = self._get_xmlcon_object(instrument)
         return xmlcon.serial_number
 
-    def series_is_present(self, reload=False, **kwargs):
-        return self.ctd_files.series_is_present(reload=reload, **kwargs)
+    def get_next_serno(self, server=False, **kwargs):
+        root_path = self.ctd_data_root_directory
+        if server:
+            root_path = self.ctd_data_root_directory_server
+        if not root_path:
+            return ''
+            raise NotADirectoryError
+        ctd_files_obj = get_ctd_files_object(root_path, use_stem=True)
+        return ctd_files_obj.get_next_serno(**kwargs)
 
 
 if __name__ == '__main__':

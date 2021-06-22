@@ -84,7 +84,10 @@ class CtdFile:
 
     def is_matching(self, **kwargs):
         for key, value in kwargs.items():
-            if not self.get(key) == value:
+            item = self.get(key)
+            if not item:
+                continue
+            if self.get(key) != value:
                 return False
         return True
 
@@ -146,7 +149,7 @@ class CtdFiles:
     def get_next_serno(self, **kwargs):
         latest_serno = self.get_latest_serno(**kwargs)
         if not latest_serno:
-            return None
+            return '0001'
         next_serno = str(int(latest_serno)+1).zfill(4)
         return next_serno
 
