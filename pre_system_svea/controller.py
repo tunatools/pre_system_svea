@@ -217,13 +217,23 @@ class Controller:
         xmlcon = self._get_xmlcon_object(instrument)
         return xmlcon.serial_number
 
-    def get_next_serno(self, server=False, **kwargs):
+    def _get_root_data_path(self, server=False):
         root_path = self.ctd_data_root_directory
         if server:
             root_path = self.ctd_data_root_directory_server
         if not root_path:
-            return ''
+            # return ''
             raise NotADirectoryError
+        return root_path
+
+    def series_exists(self, **kwargs):
+        root_path = self._get_root_data_path(server=server)
+        ctd_files_obj = get_ctd_files_object(root_path, use_stem=True)
+        return ctd_files_obj.series_exists(**kwargs)
+
+    def get_next_serno(self, server=False, **kwargs):
+        print('get_next_serno')
+        root_path = self._get_root_data_path(server=server)
         ctd_files_obj = get_ctd_files_object(root_path, use_stem=True)
         return ctd_files_obj.get_next_serno(**kwargs)
 

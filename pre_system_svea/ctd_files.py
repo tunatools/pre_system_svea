@@ -69,13 +69,21 @@ class CtdFileTypeFormer(CtdFileType):
 
 class CtdFile:
     def __init__(self, path, file_types=None):
+        self.valid = True
         self.path = Path(path)
         self.name = self.path.name
         self.stem = self.path.stem
         for file_type in file_types:
             match = re.findall(file_type.pattern, self.stem)
+            # print('match', match)
+            # print(match[0])
+            # print(self.stem)
             if match and match[0] == self.stem:
+                # print('OK')
                 self.file_type = file_type
+                break
+        else:
+            self.valid = False
 
     def get(self, item):
         if hasattr(self.file_type, item):
@@ -111,6 +119,8 @@ class CtdFiles:
             for name in files:
                 path = Path(root, name)
                 path = CtdFile(path, file_types=self._file_types)
+                if not path.valid:
+                    continue
                 key = name
                 if self.use_stem:
                     key = path.stem
@@ -119,13 +129,13 @@ class CtdFiles:
     def add_file_type(self, file_type_object):
         self._file_types.add(file_type_object)
 
-    def get_file_list_for_instrument(self, sbe=None):
-        stems = []
-        for stem in self.files:
-            if sbe and not stem.startswith(sbe):
-                continue
-            stems.append(stem)
-        return sorted(set(stems))
+    # def get_file_list_for_instrument(self, sbe=None):
+    #     stems = []
+    #     for stem in self.files:
+    #         if sbe and not stem.startswith(sbe):
+    #             continue
+    #         stems.append(stem)
+    #     return sorted(set(stems))
 
     def get_files_matching(self, **kwargs):
         matching_series = {}
@@ -152,6 +162,11 @@ class CtdFiles:
             return '0001'
         next_serno = str(int(latest_serno)+1).zfill(4)
         return next_serno
+
+    def series_exists(self, **kwargs):
+        if self.get_files_matching(**kwargs):
+            return True
+        return False
 
 
 def get_ctd_files_object(directory, use_stem=False):
