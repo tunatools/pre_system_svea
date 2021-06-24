@@ -28,7 +28,7 @@ class Controller:
         self.__ctd_data_root_directory_server = None
 
         self.ctd_config_root_directory = ctd_config_root_directory
-        self.ctd_files_root_directory = ctd_data_root_directory
+        self.ctd_data_root_directory = ctd_data_root_directory
 
         self.operators = Operators()
         self.stations = Stations()
@@ -128,8 +128,9 @@ class Controller:
 
     def update_xmlcon_in_main_psa_file(self, instrument):
         xmlcon_file_path = self.get_xmlcon_path(instrument)
-        psa = self._get_main_psa_object()
-        psa.xmlcon_path = xmlcon_file_path
+        psa_obj = self._get_main_psa_object()
+        psa_obj.xmlcon_path = xmlcon_file_path
+        psa_obj.save()
 
     def update_main_psa_file(self,
                              instrument=None,
@@ -147,6 +148,7 @@ class Controller:
             year = str(datetime.datetime.now().year)
 
         if instrument:
+            print('INSTRUMENT', instrument)
             self.update_xmlcon_in_main_psa_file(instrument)
 
         hex_file_path = self._get_hex_file_path(instrument=instrument,
@@ -157,30 +159,31 @@ class Controller:
         if not directory.exists():
             os.makedirs(directory)
 
-        psa.data_path = hex_file_path
+        psa_obj = self._get_main_psa_object()
+        psa_obj.data_path = hex_file_path
 
         if depth:
-            psa.display_depth = depth
+            psa_obj.display_depth = depth
 
         if nr_bins:
-            psa.nr_bins = nr_bins
+            psa_obj.nr_bins = nr_bins
 
         if station:
-            psa.station = station
+            psa_obj.station = station
 
         if operator:
-            psa.operator = operator
+            psa_obj.operator = operator
 
         if ship_code:
-            psa.ship = self.ships.get_code(ship_code)
+            psa_obj.ship = self.ships.get_code(ship_code)
 
         if cruise_nr:
-            psa.cruise = f'SMHI-{cruise_nr.zfill(2)}-{year}'
+            psa_obj.cruise = f'SMHI-{cruise_nr.zfill(2)}-{year}'
 
         if position:
-            psa.position = position
+            psa_obj.position = position
 
-        psa.save()
+        psa_obj.save()
 
     def _get_hex_file_path(self, instrument=None, cruise_nr=None, ship_code=None, serno=None):
         if not all([
@@ -205,7 +208,7 @@ class Controller:
             serno
         ])
         
-        directory = Path(self.ctd_files_root_directory, year, 'raw')
+        directory = Path(self.ctd_data_root_directory, 'raw')
         file_path = Path(directory, f'{file_stem}.hex')
         return file_path
 
