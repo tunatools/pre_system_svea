@@ -16,6 +16,9 @@ import psutil
 from ctd_processing import psa
 from ctd_processing import xmlcon
 
+from svepa.svepa import Svepa
+from svepa import exceptions as svepa_exceptions
+
 
 class Controller:
 
@@ -77,6 +80,26 @@ class Controller:
         if not directory.exists():
             os.makedirs(directory)
         self.__ctd_data_root_directory_server = directory
+
+    def get_svepa_info(self):
+        svepa = Svepa()
+        data = {}
+        data['ctd_station_started'] = svepa.event_type_is_running('CTD')
+        # if not data['ctd_station_started']:
+        #     return data
+
+        data['running_event_types'] = [item for item in svepa.get_running_event_types() if item != 'CTD']
+        data['event_id'] = svepa.get_event_id_for_running_event_type('CTD')
+        data['parent_event_id'] = svepa.get_parent_event_id_for_running_event_type('CTD')
+        lat, lon = svepa.get_position()
+        data['lat'] = lat
+        data['lon'] = lon
+        data['cruise'] = svepa.get_cruise()
+        data['serno'] = svepa.get_serno()
+        data['station'] = svepa.get_station()
+
+        return data
+
 
     def get_station_list(self):
         return self.stations.get_station_list()
@@ -142,7 +165,10 @@ class Controller:
                              station='',
                              operator='',
                              year=None,
-                             position=None):
+                             position=['', ''],
+                             event_id='',
+                             parent_event_id='',
+                             add_samp=''):
 
         if not year:
             year = str(datetime.datetime.now().year)
@@ -151,10 +177,11 @@ class Controller:
             print('INSTRUMENT', instrument)
             self.update_xmlcon_in_main_psa_file(instrument)
 
-        hex_file_path = self._get_hex_file_path(instrument=instrument,
-                                                cruise_nr=cruise_nr,
-                                                ship_code=ship_code,
-                                                serno=serno)
+        hex_file_path = self.get_data_file_path(instrument=instrument,
+                                                cruise=cruise_nr,
+                                                ship=ship_code,
+                                                serno=serno,
+                                                server=True)
         directory = hex_file_path.parent
         if not directory.exists():
             os.makedirs(directory)
@@ -168,28 +195,31 @@ class Controller:
         if nr_bins:
             psa_obj.nr_bins = nr_bins
 
-        if station:
-            psa_obj.station = station
+        psa_obj.station = station
 
-        if operator:
-            psa_obj.operator = operator
+        psa_obj.operator = operator
 
         if ship_code:
-            psa_obj.ship = self.ships.get_code(ship_code)
+            psa_obj.ship = f'{self.ships.get_code(ship_code)} {self.ships.get_name(ship_code)}'
 
-        if cruise_nr:
-            psa_obj.cruise = f'SMHI-{cruise_nr.zfill(2)}-{year}'
+        if cruise_nr and ship_code and year:
+            psa_obj.cruise = f'{self.ships.get_code(ship_code)}-{year}-{cruise_nr.zfill(2)}'
 
-        if position:
-            psa_obj.position = position
+        psa_obj.position = position
+
+        psa_obj.event_id = event_id
+
+        psa_obj.parent_event_id = parent_event_id
+
+        psa_obj.add_samp = add_samp
 
         psa_obj.save()
 
-    def _get_hex_file_path(self, instrument=None, cruise_nr=None, ship_code=None, serno=None):
+    def get_data_file_path(self, instrument=None, cruise=None, ship=None, serno=None, server=False):
         if not all([
             instrument,
-            cruise_nr,
-            ship_code,
+            cruise,
+            ship,
             serno
         ]):
             raise ValueError('Missing information')
@@ -203,12 +233,11 @@ class Controller:
             instrument,
             self.get_instrument_serial_number(instrument),
             time_str,
-            self.ships.get_code(ship_code),
-            cruise_nr.zfill(2),
+            self.ships.get_code(ship),
+            cruise.zfill(2),
             serno
         ])
-        
-        directory = Path(self.ctd_data_root_directory, 'raw')
+        directory = Path(self._get_root_data_path(server=server), year, 'raw')
         file_path = Path(directory, f'{file_stem}.hex')
         return file_path
 
@@ -229,15 +258,29 @@ class Controller:
             raise NotADirectoryError
         return root_path
 
-    def series_exists(self, **kwargs):
+    def series_exists(self, return_file_name=False, **kwargs):
+        server = kwargs.pop('server')
         root_path = self._get_root_data_path(server=server)
-        ctd_files_obj = get_ctd_files_object(root_path, use_stem=True)
-        return ctd_files_obj.series_exists(**kwargs)
+        ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
+        return ctd_files_obj.series_exists(return_file_name=return_file_name, **kwargs)
+
+    def get_latest_serno(self, server=False, **kwargs):
+        print('get_latest_serno')
+        root_path = self._get_root_data_path(server=server)
+        ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
+        return ctd_files_obj.get_latest_serno(**kwargs)
+
+    def get_latest_series_path(self, server=False, **kwargs):
+        print('controller.get_latest_series_path kwargs', kwargs)
+        root_path = self._get_root_data_path(server=server)
+        ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
+        # inga filer här av någon anledning....
+        return ctd_files_obj.get_latest_series(path=True, **kwargs)
 
     def get_next_serno(self, server=False, **kwargs):
         print('get_next_serno')
         root_path = self._get_root_data_path(server=server)
-        ctd_files_obj = get_ctd_files_object(root_path, use_stem=True)
+        ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
         return ctd_files_obj.get_next_serno(**kwargs)
 
 

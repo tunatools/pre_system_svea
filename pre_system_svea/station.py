@@ -68,8 +68,10 @@ class StationFile(StationMethods):
 
         self._station_synonyms = {}
 
-        self.lat_col = 'LATITUDE_WGS84_SWEREF99_DD'
-        self.lon_col = 'LONGITUDE_WGS84_SWEREF99_DD'
+        # self.lat_col = 'LATITUDE_WGS84_SWEREF99_DD'
+        # self.lon_col = 'LONGITUDE_WGS84_SWEREF99_DD'
+        self.lat_col = 'LAT_DM'
+        self.lon_col = 'LONG_DM'
         self.depth_col = 'WADEP'
         self.station_col = 'STATION_NAME'
 
