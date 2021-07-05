@@ -44,6 +44,7 @@ class Controller:
     @ctd_config_root_directory.setter
     def ctd_config_root_directory(self, directory):
         if not directory:
+            self.__ctd_config_root_directory = None
             return
         directory = Path(directory)
         if not directory.exists():
@@ -58,6 +59,7 @@ class Controller:
     @ctd_data_root_directory.setter
     def ctd_data_root_directory(self, directory=None):
         if not directory:
+            self.__ctd_data_root_directory = None
             return
         directory = Path(directory)
         if directory.name != 'data':
@@ -73,6 +75,7 @@ class Controller:
     @ctd_data_root_directory_server.setter
     def ctd_data_root_directory_server(self, directory=None):
         if directory is None:
+            self.__ctd_data_root_directory_server = None
             return
         directory = Path(directory)
         if directory.name != 'data':
