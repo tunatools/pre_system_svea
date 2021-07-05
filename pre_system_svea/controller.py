@@ -57,7 +57,7 @@ class Controller:
 
     @ctd_data_root_directory.setter
     def ctd_data_root_directory(self, directory=None):
-        if directory is None:
+        if not directory:
             return
         directory = Path(directory)
         if directory.name != 'data':
