@@ -103,7 +103,6 @@ class Controller:
 
         return data
 
-
     def get_station_list(self):
         return self.stations.get_station_list()
 

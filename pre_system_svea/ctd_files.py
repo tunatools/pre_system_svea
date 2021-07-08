@@ -107,13 +107,13 @@ class CtdFile:
     def is_matching(self, **kwargs):
         for key, value in kwargs.items():
             item = self.get(key)
-            print('TRY MATCHING:', key, value, item)
+            # print('TRY MATCHING:', key, value, item)
             if not item:
                 continue
             if item == None:
                 continue
             if item != value:
-                print('NOT MATCHING:', key, value, item)
+                # print('NOT MATCHING:', key, value, item)
                 return False
         return True
 
@@ -134,7 +134,7 @@ class CtdFiles:
 
     def check_directory(self):
         self.files = {}
-        print('ROOT directory in CtdFiles', self.root_directory)
+        # print('ROOT directory in CtdFiles', self.root_directory)
         for root, dirs, files in os.walk(self.root_directory, topdown=False):
             for name in files:
                 path = Path(root, name)
@@ -152,17 +152,9 @@ class CtdFiles:
     def add_file_type(self, file_type_object):
         self._file_types.add(file_type_object)
 
-    # def get_file_list_for_instrument(self, sbe=None):
-    #     stems = []
-    #     for stem in self.files:
-    #         if sbe and not stem.startswith(sbe):
-    #             continue
-    #         stems.append(stem)
-    #     return sorted(set(stems))
-
     def get_files_matching(self, as_list=False, **kwargs):
         matching_series = {}
-        print('self.files', self.files)
+        # print('self.files', self.files)
         for name in sorted(self.files):
             obj = self.files[name]
             if obj.is_matching(**kwargs):
@@ -177,9 +169,8 @@ class CtdFiles:
         :param serno:
         :return:
         """
-        print('get_latest_serno kwargs: ', kwargs)
+        # print('get_latest_serno kwargs: ', kwargs)
         matching_files = self.get_files_matching(**kwargs)
-        print(matching_files)
         serno_list = sorted(set([obj.get('serno') for name, obj in matching_files.items()]))
         if not serno_list:
             return None
@@ -188,7 +179,7 @@ class CtdFiles:
     def get_latest_series(self, path=False, **kwargs):
         serno = self.get_latest_serno(**kwargs)
         kwargs['serno'] = serno
-        print('ctd_files.get_latest_series kwargs', kwargs)
+        # print('ctd_files.get_latest_series kwargs', kwargs)
         matching_files = self.get_files_matching(**kwargs)
         if not matching_files:
             return None
@@ -214,6 +205,9 @@ class CtdFiles:
             return True
         return False
 
+    def get_number_of_series(self):
+        return len(self.get_files_matching())
+
 
 def get_ctd_files_object(directory, use_stem=False, suffix=None):
     obj = CtdFiles(directory, use_stem=use_stem, suffix=suffix)
@@ -223,5 +217,5 @@ def get_ctd_files_object(directory, use_stem=False, suffix=None):
 
 
 if __name__ == '__main__':
-    c = get_ctd_files_object(r'C:\CTD_BAS_DATA\2012')
+    c = get_ctd_files_object(r'C:\mw\temp_ctd_pre_system_data_root\data\2021\raw', suffix='.hex')
 
