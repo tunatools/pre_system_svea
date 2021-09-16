@@ -4,6 +4,7 @@ from pre_system_svea.ship import Ships
 
 from pre_system_svea.ctd_config import CtdConfig
 from pre_system_svea.ctd_files import get_ctd_files_object
+from pre_system_svea.sensor_info import SensorInfo
 from  pre_system_svea import utils
 
 import threading
@@ -15,6 +16,7 @@ import psutil
 
 from ctd_processing import psa
 from ctd_processing import xmlcon
+from ctd_processing import paths
 
 from svepa.svepa import Svepa
 from svepa import exceptions as svepa_exceptions
@@ -22,16 +24,11 @@ from svepa import exceptions as svepa_exceptions
 
 class Controller:
 
-    def __init__(self, ctd_config_root_directory=None, ctd_data_root_directory=None):
+    def __init__(self, paths_object):
         self.ctd_config = None
         self.ctd_files = None
 
-        self.__ctd_config_root_directory = None
-        self.__ctd_data_root_directory = None
-        self.__ctd_data_root_directory_server = None
-
-        self.ctd_config_root_directory = ctd_config_root_directory
-        self.ctd_data_root_directory = ctd_data_root_directory
+        self._paths = paths_object
 
         self.operators = Operators()
         self.stations = Stations()
@@ -39,50 +36,28 @@ class Controller:
 
     @property
     def ctd_config_root_directory(self):
-        return self.__ctd_config_root_directory
+        return self._paths('config_dir')
 
     @ctd_config_root_directory.setter
     def ctd_config_root_directory(self, directory):
-        if not directory:
-            self.__ctd_config_root_directory = None
-            return
-        directory = Path(directory)
-        if not directory.exists():
-            return
-        self.__ctd_config_root_directory = directory
-        self.ctd_config = CtdConfig(directory)
+        self._paths.set_config_root_directory(directory)
+        self.ctd_config = CtdConfig(self._paths('config_dir'))
 
     @property
     def ctd_data_root_directory(self):
-        return self.__ctd_data_root_directory
+        return self._paths.get_local_directory('root')
 
     @ctd_data_root_directory.setter
-    def ctd_data_root_directory(self, directory=None):
-        if not directory:
-            self.__ctd_data_root_directory = None
-            return
-        directory = Path(directory)
-        if directory.name != 'data':
-            directory = Path(directory, 'data')
-        if not directory.exists():
-            os.makedirs(directory)
-        self.__ctd_data_root_directory = directory
+    def ctd_data_root_directory(self, directory):
+        self._paths.set_local_root_directory(directory)
 
     @property
     def ctd_data_root_directory_server(self):
-        return self.__ctd_data_root_directory_server
+        return self._paths.get_server_directory('root')
 
     @ctd_data_root_directory_server.setter
-    def ctd_data_root_directory_server(self, directory=None):
-        if not directory:
-            self.__ctd_data_root_directory_server = None
-            return
-        directory = Path(directory)
-        if directory.name != 'data':
-            directory = Path(directory, 'data')
-        if not directory.exists():
-            os.makedirs(directory)
-        self.__ctd_data_root_directory_server = directory
+    def ctd_data_root_directory_server(self, directory):
+        self._paths.set_server_root_directory(directory)
 
     def get_svepa_info(self):
         svepa = Svepa()
@@ -124,9 +99,14 @@ class Controller:
     def run_seasave(self):
         if 'Seasave.exe' in self._get_running_programs():
             raise ChildProcessError('Seasave is already running!')
+
         t = threading.Thread(target=self._subprocess_seasave)
         t.daemon = True  # close pipe if GUI process exits
         t.start()
+
+    def create_sensor_info_file(self, config_file):
+        obj = SensorInfo()
+        obj.create_file_from_config_file(config_file)
 
     def _subprocess_seasave(self):
         subprocess.run([str(self.ctd_config.seasave_program_path), f'-p={self.ctd_config.seasave_psa_main_file}'])
@@ -176,14 +156,14 @@ class Controller:
             year = str(datetime.datetime.now().year)
 
         if instrument:
+            self._instrument = instrument
             print('INSTRUMENT', instrument)
             self.update_xmlcon_in_main_psa_file(instrument)
 
         hex_file_path = self.get_data_file_path(instrument=instrument,
                                                 cruise=cruise_nr,
                                                 ship=ship_code,
-                                                serno=serno,
-                                                server=True)
+                                                serno=serno)
         directory = hex_file_path.parent
         if not directory.exists():
             os.makedirs(directory)
@@ -217,14 +197,13 @@ class Controller:
 
         psa_obj.save()
 
-    def get_data_file_path(self, instrument=None, cruise=None, ship=None, serno=None, server=False):
-        if not all([
-            instrument,
-            cruise,
-            ship,
-            serno
-        ]):
-            raise ValueError('Missing information')
+    def get_data_file_path(self, instrument=None, cruise=None, ship=None, serno=None):
+        missing = []
+        for key, value in zip(['instrument', 'cruise', 'ship', 'serno'], [instrument, cruise, ship, serno]):
+            if not value:
+                missing.append(key)
+        if missing:
+            raise ValueError(f'Missing information: {str(missing)}')
         # Builds the file stem to be as the name for the processed file.
         # sbe09_1387_20200207_0801_77_10_0120
         now = datetime.datetime.now()
@@ -239,7 +218,7 @@ class Controller:
             cruise.zfill(2),
             serno
         ])
-        directory = Path(self._get_root_data_path(server=server), year, 'raw')
+        directory = self._paths.get_local_directory('source')
         file_path = Path(directory, f'{file_stem}.hex')
         return file_path
 
@@ -259,35 +238,42 @@ class Controller:
             # return ''
             raise NotADirectoryError
         return root_path
+    
+    def _get_raw_data_path(self, server=False, year=None, **kwargs):
+        if server:
+            return self._paths.get_server_directory('raw', year=year, **kwargs)
+        else:
+            return self._paths.get_local_directory('raw', **kwargs)
 
-    def series_exists(self, return_file_name=False, **kwargs):
-        server = kwargs.pop('server')
-        root_path = self._get_root_data_path(server=server)
+    def series_exists(self, return_file_name=False, server=False, **kwargs):
+        root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
         ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
         return ctd_files_obj.series_exists(return_file_name=return_file_name, **kwargs)
 
     def get_latest_serno(self, server=False, **kwargs):
         print('get_latest_serno')
-        root_path = self._get_root_data_path(server=server)
+        root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
         ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
         return ctd_files_obj.get_latest_serno(**kwargs)
 
     def get_latest_series_path(self, server=False, **kwargs):
         print('controller.get_latest_series_path kwargs', kwargs)
-        root_path = self._get_root_data_path(server=server)
+        root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
         ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
         # inga filer här av någon anledning....
         return ctd_files_obj.get_latest_series(path=True, **kwargs)
 
     def get_next_serno(self, server=False, **kwargs):
         print('get_next_serno')
-        root_path = self._get_root_data_path(server=server)
+        root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
         ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
         return ctd_files_obj.get_next_serno(**kwargs)
 
 
 if __name__ == '__main__':
-    root_directory = f'C:\mw\git\ctd_config'
-    c = Controller(ctd_config_root_directory=root_directory)
-    c.update_main_psa_file('sbe09')
+    sbe_paths = paths.SBEPaths()
+    c = Controller(paths_object=sbe_paths)
+    c.ctd_config_root_directory = r'C:\mw\git\ctd_config'
+    c.ctd_data_root_directory = r'C:\mw\temp_ctd_pre_system_data_root'
+    c.update_main_psa_file(instrument='sbe09', cruise_nr='01', ship_code='77SE', serno='0001')
     # c.run_seasave()

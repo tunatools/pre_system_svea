@@ -123,7 +123,7 @@ class CtdFiles:
     def __init__(self, root_directory, use_stem=False, suffix=None):
         self.root_directory = Path(root_directory)
         if not self.root_directory.exists():
-            raise NotADirectoryError
+            raise NotADirectoryError(self.root_directory)
 
         self._file_types = set()
 
