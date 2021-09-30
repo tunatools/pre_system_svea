@@ -58,11 +58,16 @@ class CtdConfig:
         return paths
 
     def _save_paths(self):
-        self.seasave_program_path = self._get_path('seasave', 'program')
-        self.seasave_psa_main_file = self._get_path('seasave', 'psa_main_file')
+        try:
+            self.seasave_program_path = self._get_path('seasave', 'program')
+            self.seasave_psa_main_file = self._get_path('seasave', 'psa_main_file')
 
-        self._save_path_sbe09()
-        self._save_path_sbe19()
+            self._save_path_sbe09()
+            self._save_path_sbe19()
+        except FileNotFoundError:
+            return
+
+
 
     def _save_path_sbe09(self):
         self.seasave_sbe09_xmlcon_file = self._get_path('seasave', 'xmlcon_files', 'SBE09', path_if_not_paths=True, suffix='xmlcon')

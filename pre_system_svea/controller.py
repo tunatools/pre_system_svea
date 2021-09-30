@@ -4,7 +4,6 @@ from pre_system_svea.ship import Ships
 
 from pre_system_svea.ctd_config import CtdConfig
 from pre_system_svea.ctd_files import get_ctd_files_object
-from pre_system_svea.sensor_info import SensorInfo
 from  pre_system_svea import utils
 
 import threading
@@ -104,10 +103,6 @@ class Controller:
         t.daemon = True  # close pipe if GUI process exits
         t.start()
 
-    def create_sensor_info_file(self, config_file):
-        obj = SensorInfo()
-        obj.create_file_from_config_file(config_file)
-
     def _subprocess_seasave(self):
         subprocess.run([str(self.ctd_config.seasave_program_path), f'-p={self.ctd_config.seasave_psa_main_file}'])
 
@@ -150,7 +145,10 @@ class Controller:
                              position=['', ''],
                              event_id='',
                              parent_event_id='',
-                             add_samp=''):
+                             add_samp='',
+                             metadata_admin={},
+                             metadata_conditions={},
+                             **kwargs):
 
         if not year:
             year = str(datetime.datetime.now().year)
@@ -194,6 +192,9 @@ class Controller:
         psa_obj.parent_event_id = parent_event_id
 
         psa_obj.add_samp = add_samp
+
+        psa_obj.metadata_admin = metadata_admin
+        psa_obj.metadata_conditions = metadata_conditions
 
         psa_obj.save()
 
