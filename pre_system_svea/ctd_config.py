@@ -67,8 +67,6 @@ class CtdConfig:
         except FileNotFoundError:
             return
 
-
-
     def _save_path_sbe09(self):
         self.seasave_sbe09_xmlcon_file = self._get_path('seasave', 'xmlcon_files', 'SBE09', path_if_not_paths=True, suffix='xmlcon')
         # Check if xmlcon is a directory. If so only one file is allowed:

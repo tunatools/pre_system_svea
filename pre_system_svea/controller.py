@@ -1,24 +1,19 @@
-from pre_system_svea.operator import Operators
-from pre_system_svea.station import Stations
-from pre_system_svea.ship import Ships
-
-from pre_system_svea.ctd_config import CtdConfig
-from pre_system_svea.ctd_files import get_ctd_files_object
-from  pre_system_svea import utils
-
-import threading
-import subprocess
-from pathlib import Path
 import datetime
 import os
+import subprocess
+import threading
+from pathlib import Path
+
 import psutil
-
-from ctd_processing import psa
-from ctd_processing import xmlcon
-from ctd_processing import paths
-
-from svepa.svepa import Svepa
+from file_explorer import psa
+from file_explorer import seabird
+from file_explorer.seabird import paths
+from pre_system_svea.ctd_config import CtdConfig
+from pre_system_svea.operator import Operators
+from pre_system_svea.ship import Ships
+from pre_system_svea.station import Stations
 from svepa import exceptions as svepa_exceptions
+from svepa.svepa import Svepa
 
 
 class Controller:
@@ -120,7 +115,7 @@ class Controller:
 
     def _get_xmlcon_object(self, instrument):
         xmlcon_file_path = self.get_xmlcon_path(instrument)
-        obj = xmlcon.XMLCONfile(xmlcon_file_path)
+        obj = seabird.XmlconFile(xmlcon_file_path, ignore_pattern=True)
         return obj
 
     def _get_main_psa_object(self):
@@ -225,11 +220,11 @@ class Controller:
 
     def get_sensor_info_in_xmlcon(self, instrument):
         xmlcon = self._get_xmlcon_object(instrument)
-        return xmlcon.get_sensor_info()
+        return xmlcon.sensor_info
 
     def get_instrument_serial_number(self, instrument):
         xmlcon = self._get_xmlcon_object(instrument)
-        return xmlcon.serial_number
+        return xmlcon.instrument_number
 
     def _get_root_data_path(self, server=False):
         root_path = self.ctd_data_root_directory
@@ -248,27 +243,36 @@ class Controller:
 
     def series_exists(self, return_file_name=False, server=False, **kwargs):
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
-        ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
-        return ctd_files_obj.series_exists(return_file_name=return_file_name, **kwargs)
+        pack_col = seabird.get_package_collection_for_directory(root_path)
+        return pack_col.series_exists(**kwargs)
+
+        # ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
+        # return ctd_files_obj.series_exists(return_file_name=return_file_name, **kwargs)
 
     def get_latest_serno(self, server=False, **kwargs):
         print('get_latest_serno')
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
-        ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
-        return ctd_files_obj.get_latest_serno(**kwargs)
+        pack_col = seabird.get_package_collection_for_directory(root_path)
+        return pack_col.get_latest_serno(**kwargs)
+        # ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
+        # return ctd_files_obj.get_latest_serno(**kwargs)
 
     def get_latest_series_path(self, server=False, **kwargs):
         print('controller.get_latest_series_path kwargs', kwargs)
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
-        ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
-        # inga filer här av någon anledning....
-        return ctd_files_obj.get_latest_series(path=True, **kwargs)
+        pack_col = seabird.get_package_collection_for_directory(root_path)
+        return pack_col.get_latest_series(**kwargs)
+        # ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
+        # # inga filer här av någon anledning....
+        # return ctd_files_obj.get_latest_series(path=True, **kwargs)
 
     def get_next_serno(self, server=False, **kwargs):
         print('get_next_serno')
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
-        ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
-        return ctd_files_obj.get_next_serno(**kwargs)
+        pack_col = seabird.get_package_collection_for_directory(root_path)
+        return pack_col.get_next_serno(**kwargs)
+        # ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
+        # return ctd_files_obj.get_next_serno(**kwargs)
 
 
 if __name__ == '__main__':
