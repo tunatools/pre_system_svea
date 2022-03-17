@@ -4,6 +4,7 @@ import subprocess
 import threading
 from pathlib import Path
 
+import file_explorer
 import psutil
 from file_explorer import psa
 from file_explorer import seabird
@@ -243,7 +244,7 @@ class Controller:
 
     def series_exists(self, return_file_name=False, server=False, **kwargs):
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
-        pack_col = seabird.get_package_collection_for_directory(root_path)
+        pack_col = file_explorer.get_package_collection_for_directory(root_path)
         return pack_col.series_exists(**kwargs)
 
         # ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
@@ -252,7 +253,7 @@ class Controller:
     def get_latest_serno(self, server=False, **kwargs):
         print('get_latest_serno')
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
-        pack_col = seabird.get_package_collection_for_directory(root_path)
+        pack_col = file_explorer.get_package_collection_for_directory(root_path)
         return pack_col.get_latest_serno(**kwargs)
         # ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
         # return ctd_files_obj.get_latest_serno(**kwargs)
@@ -260,7 +261,7 @@ class Controller:
     def get_latest_series_path(self, server=False, **kwargs):
         print('controller.get_latest_series_path kwargs', kwargs)
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
-        pack_col = seabird.get_package_collection_for_directory(root_path)
+        pack_col = file_explorer.get_package_collection_for_directory(root_path)
         return pack_col.get_latest_series(**kwargs)
         # ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
         # # inga filer här av någon anledning....
@@ -269,7 +270,7 @@ class Controller:
     def get_next_serno(self, server=False, **kwargs):
         print('get_next_serno')
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
-        pack_col = seabird.get_package_collection_for_directory(root_path)
+        pack_col = file_explorer.get_package_collection_for_directory(root_path)
         return pack_col.get_next_serno(**kwargs)
         # ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
         # return ctd_files_obj.get_next_serno(**kwargs)
