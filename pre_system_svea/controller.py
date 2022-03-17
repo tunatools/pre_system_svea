@@ -139,11 +139,11 @@ class Controller:
                              operator='',
                              year=None,
                              position=['', ''],
-                             event_id='',
-                             parent_event_id='',
+                             event_ids={},
                              add_samp='',
                              metadata_admin={},
                              metadata_conditions={},
+                             pumps={},
                              **kwargs):
 
         if not year:
@@ -183,9 +183,9 @@ class Controller:
 
         psa_obj.position = position
 
-        psa_obj.event_id = event_id
-
-        psa_obj.parent_event_id = parent_event_id
+        psa_obj.pumps = pumps 
+        
+        psa_obj.event_ids = event_ids
 
         psa_obj.add_samp = add_samp
 
