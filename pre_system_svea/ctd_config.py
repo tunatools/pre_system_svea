@@ -58,29 +58,25 @@ class CtdConfig:
         return paths
 
     def _save_paths(self):
-        try:
-            self.seasave_program_path = self._get_path('seasave', 'program')
-            self.seasave_psa_main_file = self._get_path('seasave', 'psa_main_file')
+        self.seasave_program_path = self._get_path('seasave', 'program')
+        self.seasave_psa_main_file = self._get_path('seasave', 'psa_main_file')
 
-            self._save_path_sbe09()
-            self._save_path_sbe19()
-        except FileNotFoundError:
-            return
+        self._save_path_sbe09()
+        self._save_path_sbe19()
 
     def _save_path_sbe09(self):
         self.seasave_sbe09_xmlcon_file = self._get_path('seasave', 'xmlcon_files', 'SBE09', path_if_not_paths=True, suffix='xmlcon')
-        # Check if xmlcon is a directory. If so only one file is allowed:
         if not self.seasave_sbe09_xmlcon_file:
             raise FileNotFoundError(f'No xmlcon file found for SEB09')
         if type(self.seasave_sbe09_xmlcon_file) == list:
-            raise FileExistsError('Too many xmlcon files found for SBE09')
+            raise FileExistsError(f'Too many xmlcon files found for SBE09 in directory: {self.seasave_sbe09_xmlcon_file[0].parent}')
 
     def _save_path_sbe19(self):
         self.seasave_sbe19_xmlcon_file = self._get_path('seasave', 'xmlcon_files', 'SBE19', path_if_not_paths=True, suffix='xmlcon')
         if not self.seasave_sbe19_xmlcon_file:
             raise FileNotFoundError(f'No xmlcon file found for SEB19')
         if type(self.seasave_sbe19_xmlcon_file) == list:
-            raise FileExistsError('Too many xmlcon files found for SBE19')
+            raise FileExistsError(f'Too many xmlcon files found for SBE19 in directory: {self.seasave_sbe19_xmlcon_file[0].parent}')
 
 
 if __name__ == '__main__':

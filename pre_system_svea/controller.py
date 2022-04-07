@@ -39,12 +39,12 @@ class Controller:
         self.ctd_config = CtdConfig(self._paths('config_dir'))
 
     @property
-    def ctd_data_root_directory(self):
-        return self._paths.get_local_directory('root')
+    def ctd_data_directory(self):
+        return self._paths.get_local_directory('source')
 
-    @ctd_data_root_directory.setter
-    def ctd_data_root_directory(self, directory):
-        self._paths.set_local_root_directory(directory)
+    @ctd_data_directory.setter
+    def ctd_data_directory(self, directory):
+        self._paths.set_source_directory(directory)
 
     @property
     def ctd_data_root_directory_server(self):
@@ -93,6 +93,7 @@ class Controller:
 
     def run_seasave(self):
         if 'Seasave.exe' in self._get_running_programs():
+            # filezilla.exe
             raise ChildProcessError('Seasave is already running!')
 
         t = threading.Thread(target=self._subprocess_seasave)
@@ -138,6 +139,7 @@ class Controller:
                              station='',
                              operator='',
                              year=None,
+                             tail=None,
                              position=['', ''],
                              event_ids={},
                              add_samp='',
@@ -154,10 +156,18 @@ class Controller:
             print('INSTRUMENT', instrument)
             self.update_xmlcon_in_main_psa_file(instrument)
 
+        if self.series_exists(server=True,
+                                      cruise=cruise_nr,
+                                      year=year,
+                                      ship=ship_code,
+                                      serno=serno):
+            raise Exception(f'Series exists')
+
         hex_file_path = self.get_data_file_path(instrument=instrument,
                                                 cruise=cruise_nr,
                                                 ship=ship_code,
-                                                serno=serno)
+                                                serno=serno,
+                                                tail=tail)
         directory = hex_file_path.parent
         if not directory.exists():
             os.makedirs(directory)
@@ -194,7 +204,7 @@ class Controller:
 
         psa_obj.save()
 
-    def get_data_file_path(self, instrument=None, cruise=None, ship=None, serno=None):
+    def get_data_file_path(self, instrument=None, cruise=None, ship=None, serno=None, tail=None):
         missing = []
         for key, value in zip(['instrument', 'cruise', 'ship', 'serno'], [instrument, cruise, ship, serno]):
             if not value:
@@ -202,7 +212,7 @@ class Controller:
         if missing:
             raise ValueError(f'Missing information: {str(missing)}')
         # Builds the file stem to be as the name for the processed file.
-        # sbe09_1387_20200207_0801_77_10_0120
+        # sbe09_1387_20200207_0801_77SE_0120
         now = datetime.datetime.now()
         time_str = now.strftime('%Y%m%d_%H%M')
         year = str(now.year)
@@ -215,6 +225,8 @@ class Controller:
             cruise.zfill(2),
             serno
         ])
+        if tail:
+            file_stem = f'{file_stem}_{tail}'
         directory = self._paths.get_local_directory('source')
         file_path = Path(directory, f'{file_stem}.hex')
         return file_path
@@ -240,10 +252,12 @@ class Controller:
         if server:
             return self._paths.get_server_directory('raw', year=year, **kwargs)
         else:
-            return self._paths.get_local_directory('raw', **kwargs)
+            return self._paths.get_local_directory('raw', year=year, **kwargs)
 
     def series_exists(self, return_file_name=False, server=False, **kwargs):
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
+        if not root_path:
+            return False
         pack_col = file_explorer.get_package_collection_for_directory(root_path)
         return pack_col.series_exists(**kwargs)
 
@@ -261,8 +275,13 @@ class Controller:
     def get_latest_series_path(self, server=False, **kwargs):
         print('controller.get_latest_series_path kwargs', kwargs)
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
+        print('root_path', root_path)
         pack_col = file_explorer.get_package_collection_for_directory(root_path)
-        return pack_col.get_latest_series(**kwargs)
+        print('pack_col', pack_col)
+        latest_pack = pack_col.get_latest_series(**kwargs)
+        if not latest_pack:
+            return
+        return latest_pack.get_file_path(suffix='.hex')
         # ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
         # # inga filer här av någon anledning....
         # return ctd_files_obj.get_latest_series(path=True, **kwargs)
