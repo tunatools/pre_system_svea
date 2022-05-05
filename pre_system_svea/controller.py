@@ -145,6 +145,7 @@ class Controller:
                              add_samp='',
                              metadata_admin={},
                              metadata_conditions={},
+                             lims_job=None,
                              pumps={},
                              **kwargs):
 
@@ -184,6 +185,8 @@ class Controller:
         psa_obj.station = station
 
         psa_obj.operator = operator
+
+        psa_obj.lims_job = lims_job or ''
 
         if ship_code:
             psa_obj.ship = f'{self.ships.get_code(ship_code)} {self.ships.get_name(ship_code)}'
