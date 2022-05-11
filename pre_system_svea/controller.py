@@ -19,13 +19,14 @@ from svepa.svepa import Svepa
 
 class Controller:
 
-    def __init__(self, paths_object):
+    def __init__(self, paths_object, **kwargs):
         self.ctd_config = None
         self.ctd_files = None
 
         self._paths = paths_object
 
         self.operators = Operators()
+        # self.stations = Stations(update_primary=kwargs.get('update_primary_station_list'))
         self.stations = Stations()
         self.ships = Ships()
 

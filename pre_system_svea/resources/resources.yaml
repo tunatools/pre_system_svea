@@ -2,16 +2,25 @@
 
 operators:
   path: 'root/operators.json'
+  encoding: 'cp1252'
   description: 'JSON file with key, value pair {short name: full name}'
 
 stations:
-  stationslista:
-    path: 'root/station.txt'
-    description: 'Master station list that i used by DV'
+  primary_station_list_url:
+    path: 'https://raw.githubusercontent.com/sharksmhi/flask_station_app/main/data/station.txt'
+    encoding: 'cp1252'
+    description: 'URL to primary station list'
+    update: false
+  backup_station_list:
+    path: 'root/backup_station.txt'
+    encoding: 'cp1252'
+    description: 'Backup station list that i used by DV.'
   filter:
     path: 'root/stationslista_matprogram.txt'
+    encoding: 'cp1252'
     description: 'One column text file listing stations to filter on'
 
 ships:
   path: 'root/ships.txt'
+  encoding: 'cp1252'
 

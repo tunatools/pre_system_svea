@@ -1,10 +1,16 @@
 from pathlib import Path
 
+import requests
+
 from pre_system_svea.resource import Resources
 
 import math
 import numpy as np
 import pandas as pd
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class StationMethods:
@@ -26,10 +32,18 @@ class StationMethods:
 
 class StationsMatprogram(StationMethods):
 
-    def __init__(self, root_directory=None):
+    def __init__(self, root_directory=None, **kwargs):
         self.station_name_list = []
         self._resources = Resources(root_directory=root_directory)
-        self._station_file = StationFile(self._resources.station_file)
+        # self._station_file = StationFile(self._resources.station_file, encoding=self._resources.s)
+        update_primary = kwargs.get('update_primary')
+        if update_primary is None:
+            update_primary = self._resources.update_primary_station_file
+        self._station_file = StationFile(backup_file_path=self._resources.backup_station_file,
+                                         primary_url=self._resources.primary_station_file_url,
+                                         primary_encoding=self._resources.primary_station_file_url_encoding,
+                                         backup_encoding=self._resources.backup_station_file_encoding,
+                                         **kwargs)
         self._load_station_filter_file()
 
     def _load_station_filter_file(self):
@@ -62,11 +76,23 @@ class StationsMatprogram(StationMethods):
 
 
 class StationFile(StationMethods):
-    def __init__(self, file_path=None):
+    def __init__(self, backup_file_path=None, primary_url=None, **kwargs):
+        # primary_url = 'https://raw.githubusercontent.com/sharksmhi/flask_station_app/main/data/station.txt'
+        # # primary_url = 'https://github.com/sharksmhi/flask_station_app/blob/main/data/station.txt'
+        # kwargs['update_primary'] = True
 
-        self.file_path = Path(file_path)
+        self._primary_file_path = None
+        self._primary_url = primary_url
+        if primary_url:
+            self._primary_file_path = Path(Path(__file__).parent, 'resources', Path(primary_url).name)
+        self._backup_file_path = None
+        if backup_file_path:
+            self._backup_file_path = Path(backup_file_path)
 
         self._station_synonyms = {}
+
+        self._primary_encoding = kwargs.get('primary_encoding', 'cp1252')
+        self._backup_encoding = kwargs.get('backup_encoding', 'cp1252')
 
         # self.lat_col = 'LATITUDE_WGS84_SWEREF99_DD'
         # self.lon_col = 'LONGITUDE_WGS84_SWEREF99_DD'
@@ -76,10 +102,34 @@ class StationFile(StationMethods):
         self.station_col = 'STATION_NAME'
 
         self._df = None
+        if kwargs.get('update_primary'):
+            self._download_station_file_from_git()
         self._load_file()
 
+    def _download_station_file_from_git(self):
+        if not self._primary_url:
+            return
+        response = requests.get(self._primary_url)
+        logger.debug(f'Setting response encoding to: {self._primary_encoding}')
+        response.encoding = self._primary_encoding
+        with open(self._primary_file_path, 'w', encoding=self._primary_encoding) as fid:
+            fid.write(response.text)
+        logger.info(f'Primary station file updated in pre_system_svea')
+
     def _load_file(self):
-        self._df = pd.read_csv(self.file_path, sep='\t', encoding='cp1252')
+        print('self._primary_file_path', self._primary_file_path)
+        if self._primary_file_path and self._primary_file_path.exists():
+            file_path = self._primary_file_path
+            encoding = self._primary_encoding
+            logger.info(f'Using primary station file i pre_system_svea: {file_path}')
+        elif self._backup_file_path and self._backup_file_path.exists():
+            file_path = self._backup_file_path
+            encoding = self._backup_encoding
+            logger.info(f'Using backup station file i pre_system_svea: {file_path}')
+        else:
+            raise FileNotFoundError('Could not find station file in pre_system_svea')
+        print('file_path', file_path)
+        self._df = pd.read_csv(file_path, sep='\t', encoding=encoding)
         self._df['MEDIA'] = self._df['MEDIA'].fillna('')
         self._df[self.depth_col] = self._df[self.depth_col].fillna('')
         # self._df = self._df[self._df['MEDIA'].str.contains('Vatten')].reset_index()

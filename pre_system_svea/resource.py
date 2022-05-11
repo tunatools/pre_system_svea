@@ -12,8 +12,16 @@ class Resources:
         self.resource_settings_file_path = Path(Path(__file__).parent, 'resources', 'resources.yaml')
 
         self.operator_file = None
-        self.station_file = None
+        self.operator_file_encoding = None
+        self.ship_file = None
+        self.ship_file_encoding = None
+        self.backup_station_file = None
+        self.backup_station_file_encoding = None
+        self.primary_station_file_url = None
+        self.primary_station_file_url_encoding = None
+        self.update_primary_station_file = False
         self.station_filter_file = None
+        self.station_filter_file_encoding = None
 
         self._config = {}
 
@@ -38,11 +46,22 @@ class Resources:
             full_path = Path(self.root_directory, path[5:])
         else:
             full_path = Path(path)
-        if must_exist and not full_path.exists():
-            raise FileNotFoundError(full_path)
-        if full_path.is_dir():
-            full_path = self._get_paths_in_directory(full_path)
+        try:
+            if must_exist and not full_path.exists():
+                raise FileNotFoundError(full_path)
+            if full_path.is_dir():
+                full_path = self._get_paths_in_directory(full_path)
+        except OSError:
+            pass
+        except Exception:
+            raise
         return full_path
+
+    def _get_encoding(self, *args):
+        item = self._config
+        for arg in args:
+            item = item.get(arg, {})
+        return item.get('encoding', '')
 
     def _get_paths_in_directory(self, directory):
         if not directory.is_dir():
@@ -50,10 +69,22 @@ class Resources:
         return [path for path in directory.iterdir()]
 
     def _save_paths(self):
+        # self.operator_file = self._get_path('operators')
+        # self.station_file = self._get_path('stations', 'sekundär_stationslista')
+        # self.station_filter_file = self._get_path('stations', 'filter')
+        # self.ship_file = self._get_path('ships')
+
         self.operator_file = self._get_path('operators')
-        self.station_file = self._get_path('stations', 'stationslista')
-        self.station_filter_file = self._get_path('stations', 'filter')
+        self.operator_file_encoding = self._get_encoding('operators')
         self.ship_file = self._get_path('ships')
+        self.ship_file_encoding = self._get_encoding('ships')
+        self.backup_station_file = self._get_path('stations', 'backup_station_list')
+        self.backup_station_file_encoding = self._get_encoding('stations', 'backup_station_list')
+        self.primary_station_file_url = self._get_path('stations', 'primary_station_list_url', must_exist=False)
+        self.primary_station_file_url_encoding = self._get_encoding('stations', 'primary_station_list_url')
+        self.update_primary_station_file = self._config.get('stations', {}).get('primary_station_list_url', {}).get('update', False)
+        self.station_filter_file = self._get_path('stations', 'filter')
+        self.station_filter_file_encoding = self._get_encoding('stations', 'filter')
 
         
 if __name__ == '__main__':
