@@ -34,13 +34,13 @@ class StationsMatprogram(StationMethods):
 
     def _load_station_filter_file(self):
         self.station_name_list = []
-        with open(self._resources.station_filter_file) as fid:
+        with open(self._resources.station_filter_file, encoding='cp1252') as fid:
             for line in fid:
                 name = line.strip()
                 if not name:
                     continue
                 if not self._station_file.get_station_info(name):
-                    print(f'Could not find station infor for station: {name}')
+                    print(f'Could not find station info for station: {name}')
                     continue
                 self.station_name_list.append(name)
         self.station_name_list.sort()
@@ -82,7 +82,7 @@ class StationFile(StationMethods):
         self._df = pd.read_csv(self.file_path, sep='\t', encoding='cp1252')
         self._df['MEDIA'] = self._df['MEDIA'].fillna('')
         self._df[self.depth_col] = self._df[self.depth_col].fillna('')
-        self._df = self._df[self._df['MEDIA'].str.contains('Vatten')].reset_index()
+        # self._df = self._df[self._df['MEDIA'].str.contains('Vatten')].reset_index()
 
     def _create_station_synonyms(self):
         for name, synonym_string in zip(self._df[self.station_col], self._df['SYNONYM_NAMES'].astype(str)):
