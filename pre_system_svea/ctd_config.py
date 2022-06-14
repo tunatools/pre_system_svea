@@ -38,7 +38,7 @@ class CtdConfig:
         if full_path.is_dir():
             full_path = self._get_paths_in_directory(full_path, path_if_not_paths=path_if_not_paths, suffix=suffix)
         else:
-            if not full_path.suffix.endswith(suffix):
+            if not full_path.suffix.lower().endswith(suffix.lower()):
                 return None
         return full_path
 
@@ -49,7 +49,7 @@ class CtdConfig:
         for path in directory.iterdir():
             if not path.is_file():
                 continue
-            if not path.suffix.endswith(suffix):
+            if not path.suffix.lower().endswith(suffix.lower()):
                 continue
             paths.append(path)
 
