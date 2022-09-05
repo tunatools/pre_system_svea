@@ -163,7 +163,7 @@ class Controller:
                                       year=year,
                                       ship=ship_code,
                                       serno=serno):
-            raise Exception(f'Series exists')
+            raise Exception(f'Serien med serienummer {serno} existerar redan på servern!')
 
         hex_file_path = self.get_data_file_path(instrument=instrument,
                                                 cruise=cruise_nr,
