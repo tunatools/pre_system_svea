@@ -158,7 +158,7 @@ class Controller:
             print('INSTRUMENT', instrument)
             self.update_xmlcon_in_main_psa_file(instrument)
 
-        if self.series_exists(server=True,
+        if self.series_exists(server=False,
                                       cruise=cruise_nr,
                                       year=year,
                                       ship=ship_code,
