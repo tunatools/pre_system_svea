@@ -112,7 +112,7 @@ class Controller:
         else:
             raise ValueError(f'Incorrect instrument number: {instrument}')
         return file_path
-    
+
     def get_seasave_psa_path(self):
         return self.ctd_config.seasave_psa_main_file
 
@@ -148,6 +148,7 @@ class Controller:
                              metadata_conditions={},
                              lims_job=None,
                              pumps={},
+                             source_dir=False,
                              **kwargs):
 
         if not year:
@@ -157,12 +158,17 @@ class Controller:
             self._instrument = instrument
             print('INSTRUMENT', instrument)
             self.update_xmlcon_in_main_psa_file(instrument)
+            
 
-        if self.series_exists(server=False,
-                                      cruise=cruise_nr,
-                                      year=year,
-                                      ship=ship_code,
-                                      serno=serno):
+        if self.series_exists(
+                # server=True,
+                cruise=cruise_nr,
+                year=year,
+                ship=ship_code,
+                serno=serno,
+                source_dir=source_dir, 
+                check_serno=kwargs.get('check_serno')
+        ):
             raise Exception(f'Serien med serienummer {serno} existerar redan på servern!')
 
         hex_file_path = self.get_data_file_path(instrument=instrument,
@@ -197,8 +203,8 @@ class Controller:
 
         psa_obj.position = position
 
-        psa_obj.pumps = pumps 
-        
+        psa_obj.pumps = pumps
+
         psa_obj.event_ids = event_ids
 
         psa_obj.add_samp = add_samp
@@ -251,7 +257,7 @@ class Controller:
             # return ''
             raise NotADirectoryError
         return root_path
-    
+
     def _get_raw_data_path(self, server=False, year=None, **kwargs):
         if server:
             return self._paths.get_server_directory('raw', year=year, **kwargs)
@@ -259,17 +265,23 @@ class Controller:
             return self._paths.get_local_directory('raw', year=year, **kwargs)
 
     def series_exists(self, return_file_name=False, server=False, **kwargs):
-        root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
+        root_path = None
+        if kwargs.get('source_dir'):
+            root_path = self._paths.get_local_directory('source')
+        if not root_path:
+            root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
         if not root_path:
             return False
         pack_col = file_explorer.get_package_collection_for_directory(root_path)
-        return pack_col.series_exists(**kwargs)
+        if kwargs.get('check_serno'):
+            return pack_col.series_exists(serno=kwargs.get('serno'))
+        else:
+            return pack_col.series_exists(**kwargs)
 
         # ctd_files_obj = get_ctd_files_object(root_path, suffix='.hex')
         # return ctd_files_obj.series_exists(return_file_name=return_file_name, **kwargs)
 
     def get_latest_serno(self, server=False, **kwargs):
-        print('get_latest_serno')
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
         pack_col = file_explorer.get_package_collection_for_directory(root_path)
         return pack_col.get_latest_serno(**kwargs)
@@ -277,11 +289,8 @@ class Controller:
         # return ctd_files_obj.get_latest_serno(**kwargs)
 
     def get_latest_series_path(self, server=False, **kwargs):
-        print('controller.get_latest_series_path kwargs', kwargs)
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
-        print('root_path', root_path)
         pack_col = file_explorer.get_package_collection_for_directory(root_path)
-        print('pack_col', pack_col)
         latest_pack = pack_col.get_latest_series(**kwargs)
         if not latest_pack:
             return
@@ -291,7 +300,6 @@ class Controller:
         # return ctd_files_obj.get_latest_series(path=True, **kwargs)
 
     def get_next_serno(self, server=False, **kwargs):
-        print('get_next_serno')
         root_path = self._get_raw_data_path(server=server, year=kwargs.get('year'), create=True)
         pack_col = file_explorer.get_package_collection_for_directory(root_path)
         return pack_col.get_next_serno(**kwargs)
