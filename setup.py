@@ -14,6 +14,8 @@ root_path = pathlib.Path(__file__).parent.resolve()
 requirements = []
 with open(pathlib.Path(root_path, 'requirements.txt')) as fh:
     for line in fh:
+        if not line.strip():
+            continue
         requirements.append(line.strip())
 
 with open(pathlib.Path(root_path, 'README.md')) as fid:
