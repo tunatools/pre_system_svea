@@ -14,7 +14,13 @@ root_path = pathlib.Path(__file__).parent.resolve()
 requirements = []
 with open(pathlib.Path(root_path, 'requirements.txt')) as fh:
     for line in fh:
-        requirements.append(line.strip())
+        repo = line.strip()
+        if not repo:
+            continue
+        if repo.startswith('git'):
+            repo_name = repo.split('.git')[0].split('/')[-1]
+            repo = f"{repo_name} @ {repo}"
+        requirements.append(repo)
 
 with open(pathlib.Path(root_path, 'README.md')) as fid:
     README = fid.read()
