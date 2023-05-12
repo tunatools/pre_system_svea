@@ -14,7 +14,7 @@ from pre_system_svea.operator import Operators
 from pre_system_svea.ship import Ships
 from pre_system_svea.station import Stations
 from svepa import exceptions as svepa_exceptions
-from svepa.svepa import Svepa
+import svepa
 
 
 class Controller:
@@ -55,24 +55,9 @@ class Controller:
     def ctd_data_root_directory_server(self, directory):
         self._paths.set_server_root_directory(directory)
 
-    def get_svepa_info(self):
-        svepa = Svepa()
-        data = {}
-        data['ctd_station_started'] = svepa.event_type_is_running('CTD')
-        # if not data['ctd_station_started']:
-        #     return data
-
-        data['running_event_types'] = [item for item in svepa.get_running_event_types() if item != 'CTD']
-        data['event_id'] = svepa.get_event_id_for_running_event_type('CTD')
-        data['parent_event_id'] = svepa.get_parent_event_id_for_running_event_type('CTD')
-        lat, lon = svepa.get_position()
-        data['lat'] = lat
-        data['lon'] = lon
-        data['cruise'] = svepa.get_cruise()
-        data['serno'] = svepa.get_serno()
-        data['station'] = svepa.get_station()
-
-        return data
+    def get_svepa_info(self, credentials_path):
+        info = svepa.get_current_station_info(path_to_svepa_credentials=credentials_path)
+        return info
 
     def get_station_list(self):
         return self.stations.get_station_list()
@@ -85,6 +70,9 @@ class Controller:
 
     def get_station_info(self, station_name):
         return self.stations.get_station_info(station_name)
+    
+    def get_distance_to_station(self, lat, lon, station_name):
+        return self.stations.get_distance_to_station(lat, lon, station_name)
 
     def _get_running_programs(self):
         program_list = []

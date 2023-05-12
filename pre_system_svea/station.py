@@ -61,6 +61,9 @@ class StationsMatprogram(StationMethods):
 
     def get_closest_station(self, *args, **kwargs):
         return self._station_file.get_closest_station(*args, *kwargs)
+    
+    def get_distance_to_station(self, *args, **kwargs):
+        return self._station_file.get_distance_to_station(*args, **kwargs)
 
     def get_proper_station_name(self, *args, **kwargs):
         return self._station_file.get_proper_station_name(*args, *kwargs)
@@ -167,6 +170,13 @@ class StationFile(StationMethods):
         station_info['acceptable'] = min_dist <= station_info['OUT_OF_BOUNDS_RADIUS']
         self._add_cols_to_station_info(station_info)
         return station_info
+    
+    def get_distance_to_station(self, lat, lon, station_name):
+        info = self.get_station_info(station_name)
+        if not info:
+            return
+        dist = distance_to_station([lat, lon], [info['lat'], info['lon']])
+        return dist
 
     def get_proper_station_name(self, synonym):
         """
@@ -202,13 +212,46 @@ class Stations(StationsMatprogram):
         super().__init__(*args, **kwargs)
 
 
+def is_sequence(arg):
+    "Checks if an object is iterable (you can loop over it) and not a string"
+    return (not hasattr(arg, "strip") and
+            hasattr(arg, "__iter__"))
+
+def decmin_to_decdeg(pos, return_string=False):
+    try:
+        if is_sequence(pos):
+            output = []
+            for p in pos:
+                p = float(p)
+                if p >= 0:
+                    output.append(np.floor(p / 100.) + (p % 100) / 60.)
+                else:
+                    output.append(np.ceil(p / 100.) - (-p % 100) / 60.)
+        else:
+            pos = float(pos)
+            if pos >= 0:
+                output = np.floor(pos / 100.) + (pos % 100) / 60.
+            else:
+                output = np.ceil(pos / 100.) - (-pos % 100) / 60.
+
+        if return_string:
+            if is_sequence(output):
+                return list(map(str, output))
+            else:
+                return str(output)
+        else:
+            return output
+    except:
+        return pos
+
+
 def distance_to_station(pos1, pos2):
     """
     http://www.johndcook.com/blog/python_longitude_latitude/
     Returns distance in meters
     """
-    lat1, lon1 = pos1
-    lat2, lon2 = pos2
+    lat1, lon1 = map(decmin_to_decdeg, pos1)
+    lat2, lon2 = map(decmin_to_decdeg, pos2)
     if lat1 == lat2 and lon1 == lon2:
         return 0
     degrees_to_radians = math.pi / 180.0
@@ -231,4 +274,6 @@ def distance_to_station(pos1, pos2):
 if __name__ == '__main__':
     s = Stations()
     info = s.get_closest_station(57.0667, 19.83)
+
+    print(distance_to_station([5533.3, 1824.0], [5533.1, 1824.0]))
 
