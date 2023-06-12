@@ -37,7 +37,7 @@ for root, dirs, files in os.walk(root_path, topdown=False):
 
 setuptools.setup(
     name='pre_system_svea',
-    version='0.3.0',
+    version='0.4.0',
     author="Magnus Wenzer",
     author_email="magnus.wenzer@smhi.se",
     description="Package to process ctd files",
