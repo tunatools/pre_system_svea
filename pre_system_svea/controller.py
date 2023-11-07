@@ -93,13 +93,10 @@ class Controller:
         subprocess.run([str(self.ctd_config.seasave_program_path), f'-p={self.ctd_config.seasave_psa_main_file}'])
 
     def get_xmlcon_path(self, instrument):
-        if instrument.lower() in ['sbe09', 'sbe9']:
-            file_path = str(self.ctd_config.seasave_sbe09_xmlcon_file)
-        elif instrument.lower() == 'sbe19':
-            file_path = str(self.ctd_config.seasave_sbe19_xmlcon_file)
-        else:
+        try:
+            return str(self.ctd_config.seasave_xmlcon_files[instrument])
+        except ValueError:
             raise ValueError(f'Incorrect instrument number: {instrument}')
-        return file_path
 
     def get_seasave_psa_path(self):
         return self.ctd_config.seasave_psa_main_file

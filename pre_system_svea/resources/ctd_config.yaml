@@ -5,11 +5,6 @@ seasave:
     path: 'C:/Program Files (x86)/Sea-Bird/SeasaveV7/Seasave.exe'
   psa_main_file:
     path: 'root/SBE/seasave_psa/svea/Seasave.psa'
-  xmlcon_files:
-    SBE09:
-      # Expecting only one xmlcon file in this directory. Can also specify file path here.
-      path: 'root/SBE/XMLCON/SBE09'
-    SBE19:
-      # Expecting only one xmlcon file in this directory. Can also specify file path here.
-      path: 'root/SBE/XMLCON/SBE19'
+  xmlcon_dir:
+    path: 'root/SBE/XMLCON/'
 
