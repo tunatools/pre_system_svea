@@ -6,5 +6,5 @@ seasave:
   psa_main_file:
     path: 'root/ctd_config/SBE/seasave_psa/svea/Seasave.psa'
   xmlcon_dir:
-    path: 'root/ctd_config/SBE/XMLCON/'
+    path: 'root/SBE/XMLCON/'
 
