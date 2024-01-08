@@ -4,7 +4,7 @@ seasave:
   program:
     path: 'C:/Program Files (x86)/Sea-Bird/SeasaveV7/Seasave.exe'
   psa_main_file:
-    path: 'root/SBE/seasave_psa/svea/Seasave.psa'
+    path: 'root/ctd_config/SBE/seasave_psa/svea/Seasave.psa'
   xmlcon_dir:
-    path: 'root/SBE/XMLCON/'
+    path: 'root/ctd_config/SBE/XMLCON/'
 
